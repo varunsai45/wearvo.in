@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>WEARVO — Quick Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #080810;
+    --white: #F5F4F0;
+    --accent: #E8FF47;
+    --gray: #1A1A2E;
+    --gray2: #2A2A3E;
+    --text-muted: #888899;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+  .cursor {
+    width:12px; height:12px; background:var(--accent);
+    border-radius:50%; position:fixed; pointer-events:none;
+    z-index:9999; transition:transform 0.15s ease; mix-blend-mode:difference;
+  }
+  .cursor-follower {
+    width:36px; height:36px; border:1px solid rgba(232,255,71,0.4);
+    border-radius:50%; position:fixed; pointer-events:none;
+    z-index:9998; transition:all 0.12s ease;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:1000; opacity:0.4;
+  }
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    padding:24px 48px; display:flex; justify-content:space-between; align-items:center;
+    background:linear-gradient(to bottom, rgba(8,8,16,0.95), transparent);
+  }
+  .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; letter-spacing:0.08em; }
+  .logo span { color:var(--accent); }
+  .nav-tag { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--text-muted); border:1px solid var(--gray2); padding:6px 14px; border-radius:100px; }
+  .hero {
+    padding:140px 48px 48px;
+    position:relative; overflow:hidden;
+  }
+  .hero-bg {
+    position:absolute; inset:0;
+    background: radial-gradient(ellipse 60% 50% at 70% 50%, rgba(232,255,71,0.06) 0%, transparent 70%);
+  }
+  .hero-grid {
+    position:absolute; inset:0;
+    background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size:80px 80px;
+  }
+  .eyebrow {
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:11px; letter-spacing:0.25em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:20px; position:relative;
+    animation: fadeUp 0.5s ease 0.1s both;
+  }
+  .eyebrow::before { content:''; width:24px; height:1px; background:var(--accent); }
+  h1 {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:clamp(32px, 5vw, 64px);
+    line-height:1; letter-spacing:-0.02em; margin-bottom:16px;
+    animation: fadeUp 0.5s ease 0.2s both;
+  }
+  h1 span { color:var(--accent); }
+  .desc {
+    font-size:16px; font-weight:300; color:var(--text-muted);
+    max-width:480px; line-height:1.6;
+    animation: fadeUp 0.5s ease 0.3s both; position:relative;
+  }
+  .form-wrap { padding:40px 48px 100px; max-width:680px; }
+  .q-block { margin-bottom:36px; }
+  .q-num {
+    font-size:11px; letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .q-num::after { content:''; flex:1; height:1px; background:var(--gray2); max-width:40px; }
+  .q-text { font-family:'Syne',sans-serif; font-weight:700; font-size:17px; margin-bottom:16px; line-height:1.4; }
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .opts.three { grid-template-columns:1fr 1fr 1fr; }
+  .opt {
+    background:var(--gray); border:1px solid var(--gray2);
+    border-radius:4px; padding:14px 16px;
+    font-family:'DM Sans',sans-serif; font-size:14px;
+    color:var(--text-muted); cursor:none; text-align:left;
+    display:flex; align-items:center; gap:10px; transition:all 0.2s;
+  }
+  .opt:hover { border-color:var(--accent); color:var(--white); }
+  .opt.selected { background:rgba(232,255,71,0.1); border-color:var(--accent); color:var(--white); }
+  .opt .dot { width:14px; height:14px; border-radius:50%; border:1px solid var(--gray2); flex-shrink:0; transition:all 0.2s; }
+  .opt.selected .dot { background:var(--accent); border-color:var(--accent); }
+  textarea {
+    width:100%; background:var(--gray); border:1px solid var(--gray2);
+    border-radius:4px; padding:16px 20px; min-height:100px;
+    font-family:'DM Sans',sans-serif; font-size:15px;
+    color:var(--white); outline:none; resize:vertical; transition:border-color 0.2s;
+  }
+  textarea:focus { border-color:var(--accent); }
+  textarea::placeholder { color:var(--text-muted); }
+  .divider { height:1px; background:var(--gray2); margin:40px 0; }
+  .submit-btn {
+    width:100%; background:var(--accent); border:none; border-radius:4px;
+    padding:18px; font-family:'Syne',sans-serif; font-weight:700;
+    font-size:14px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--black); cursor:none; transition:background 0.2s, transform 0.1s; margin-top:8px;
+  }
+  .submit-btn:hover { background:#d4eb30; transform:translateY(-1px); }
+  .success-box {
+    display:none; text-align:center; padding:80px 40px;
+    background:rgba(232,255,71,0.05); border:1px solid var(--accent); border-radius:4px;
+  }
+  .success-box.show { display:block; }
+  .check {
+    width:64px; height:64px; background:rgba(232,255,71,0.1);
+    border:1px solid var(--accent); border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; margin:0 auto 24px; animation: pop 0.4s ease;
+  }
+  .success-box h2 { font-family:'Syne',sans-serif; font-weight:800; font-size:32px; margin-bottom:12px; }
+  .success-box h2 span { color:var(--accent); }
+  .success-box p { color:var(--text-muted); font-size:16px; line-height:1.6; }
+  footer {
+    padding:40px 48px; border-top:1px solid var(--gray2);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .footer-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; letter-spacing:0.08em; }
+  .footer-logo span { color:var(--accent); }
+  .footer-text { font-size:13px; color:var(--text-muted); }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pop { 0%{transform:scale(0);opacity:0} 80%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  @media(max-width:768px){
+    nav { padding:20px 24px; }
+    .hero { padding:100px 24px 40px; }
+    .form-wrap { padding:32px 24px 80px; }
+    .opts, .opts.three { grid-template-columns:1fr; }
+    footer { flex-direction:column; gap:16px; text-align:center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-follower" id="cursorFollower"></div>
+
+<nav>
+  <div class="logo">WEAR<span>VO</span></div>
+  <div class="nav-tag">Quick Feedback</div>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="eyebrow">Help Shape WEARVO</div>
+  <h1>1 minute.<br><span>Real impact.</span></h1>
+  <p class="desc">Thank you for taking a minute to share your thoughts about WEARVO. Your feedback will help improve the idea before launch.</p>
+</section>
+
+<div class="form-wrap">
+  <div id="mainForm">
+
+    <div class="q-block">
+      <div class="q-num">01</div>
+      <div class="q-text">Age group</div>
+      <div class="opts" id="q1">
+        <button class="opt" onclick="pick(this,'q1')"><span class="dot"></span>15–18</button>
+        <button class="opt" onclick="pick(this,'q1')"><span class="dot"></span>18–22</button>
+        <button class="opt" onclick="pick(this,'q1')"><span class="dot"></span>22–25</button>
+        <button class="opt" onclick="pick(this,'q1')"><span class="dot"></span>25–30</button>
+        <button class="opt" onclick="pick(this,'q1')"><span class="dot"></span>30+</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="q-block">
+      <div class="q-num">02</div>
+      <div class="q-text">Do you sometimes feel confused about what outfits suit you?</div>
+      <div class="opts" id="q2">
+        <button class="opt" onclick="pick(this,'q2')"><span class="dot"></span>Yes, often</button>
+        <button class="opt" onclick="pick(this,'q2')"><span class="dot"></span>Sometimes</button>
+        <button class="opt" onclick="pick(this,'q2')"><span class="dot"></span>Rarely</button>
+        <button class="opt" onclick="pick(this,'q2')"><span class="dot"></span>Never</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="q-block">
+      <div class="q-num">03</div>
+      <div class="q-text">Would you try an AI that recommends outfits based on your style and preferences?</div>
+      <div class="opts" id="q3">
+        <button class="opt" onclick="pick(this,'q3')"><span class="dot"></span>Yes, definitely</button>
+        <button class="opt" onclick="pick(this,'q3')"><span class="dot"></span>Maybe</button>
+        <button class="opt" onclick="pick(this,'q3')"><span class="dot"></span>Not sure</button>
+        <button class="opt" onclick="pick(this,'q3')"><span class="dot"></span>No</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="q-block">
+      <div class="q-num">04</div>
+      <div class="q-text">Where do you usually buy clothes?</div>
+      <div class="opts three" id="q4">
+        <button class="opt" onclick="pick(this,'q4')"><span class="dot"></span>Online stores</button>
+        <button class="opt" onclick="pick(this,'q4')"><span class="dot"></span>Physical stores</button>
+        <button class="opt" onclick="pick(this,'q4')"><span class="dot"></span>Both</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="q-block">
+      <div class="q-num">05</div>
+      <div class="q-text">What feature would be most useful for you?</div>
+      <div class="opts" id="q5">
+        <button class="opt" onclick="pick(this,'q5')"><span class="dot"></span>AI outfit recommendations</button>
+        <button class="opt" onclick="pick(this,'q5')"><span class="dot"></span>Virtual outfit preview</button>
+        <button class="opt" onclick="pick(this,'q5')"><span class="dot"></span>Smart store panel in shops</button>
+        <button class="opt" onclick="pick(this,'q5')"><span class="dot"></span>Personalized styling suggestions</button>
+        <button class="opt" onclick="pick(this,'q5')"><span class="dot"></span>All of the above</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="q-block">
+      <div class="q-num">06</div>
+      <div class="q-text">What would you like to improve or add in WEARVO?</div>
+      <textarea id="q6" placeholder="Share your honest thoughts — it helps us build better..."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="q-block">
+      <div class="q-num">07</div>
+      <div class="q-text">Would you like to try WEARVO when it launches?</div>
+      <div class="opts three" id="q7">
+        <button class="opt" onclick="pick(this,'q7')"><span class="dot"></span>Yes</button>
+        <button class="opt" onclick="pick(this,'q7')"><span class="dot"></span>Maybe</button>
+        <button class="opt" onclick="pick(this,'q7')"><span class="dot"></span>No</button>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="submitForm()">Submit Feedback →</button>
+
+  </div>
+
+  <div class="success-box" id="successBox">
+    <div class="check">✓</div>
+    <h2>Thank you for your <span>feedback!</span></h2>
+    <p>You're helping shape WEARVO before it launches.<br>We appreciate every honest answer. 🙏</p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">WEAR<span>VO</span></div>
+  <div class="footer-text">© 2026 WEARVO · wearvo.in · AI Fashion Intelligence</div>
+</footer>
+
+<script>
+  const cursor = document.getElementById('cursor');
+  const follower = document.getElementById('cursorFollower');
+  let mouseX=0,mouseY=0,followerX=0,followerY=0;
+  document.addEventListener('mousemove',(e)=>{
+    mouseX=e.clientX; mouseY=e.clientY;
+    cursor.style.left=mouseX-6+'px'; cursor.style.top=mouseY-6+'px';
+  });
+  function animateFollower(){
+    followerX+=(mouseX-followerX)*0.12; followerY+=(mouseY-followerY)*0.12;
+    follower.style.left=followerX-18+'px'; follower.style.top=followerY-18+'px';
+    requestAnimationFrame(animateFollower);
+  }
+  animateFollower();
+  document.querySelectorAll('button,textarea').forEach(el=>{
+    el.addEventListener('mouseenter',()=>cursor.style.transform='scale(2)');
+    el.addEventListener('mouseleave',()=>cursor.style.transform='scale(1)');
+  });
+
+  function pick(btn, groupId){
+    document.querySelectorAll('#'+groupId+' .opt').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  function getSelected(groupId){
+    const s = document.querySelector('#'+groupId+' .opt.selected');
+    return s ? s.innerText.trim() : '';
+  }
+
+  function submitForm(){
+    document.getElementById('mainForm').style.display='none';
+    document.getElementById('successBox').classList.add('show');
+
+    var FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScXDR6QR9ihzjMrh4OwoF-FuvhskD7DeqS3Dzgazc8e32d5xQ/formResponse';
+    var body = new FormData();
+    body.append('entry.1830016204', getSelected('q1'));
+    body.append('entry.159313097',  getSelected('q2'));
+    body.append('entry.1021518840', getSelected('q3'));
+    body.append('entry.1316616192', getSelected('q4'));
+    body.append('entry.652366650',  getSelected('q5'));
+    body.append('entry.1871799849', document.getElementById('q6').value.trim());
+    body.append('entry.1053849286', getSelected('q7'));
+    fetch(FORM_URL, {method:'POST', mode:'no-cors', body:body});
+  }
+
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('.q-block').forEach(el=>{
+    el.style.opacity='0'; el.style.transform='translateY(20px)';
+    el.style.transition='opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
