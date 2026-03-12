@@ -827,20 +827,20 @@
     </p>
 
     <div class="waitlist-form">
-      <form name="wearvo-waitlist" method="POST" data-netlify="true" action="/thankyou">
-        <input type="hidden" name="form-name" value="wearvo-waitlist" />
-        <p style="display:none"><input name="bot-field" /></p>
+      <div id="heroForm">
         <div class="form-row">
-          <input type="text" name="name" placeholder="Your full name" required />
+          <input type="text" id="h_name" placeholder="Your full name" />
         </div>
         <div class="form-row">
-          <input type="email" name="email" placeholder="Enter your email address" required />
-          <button type="submit">Join Waitlist →</button>
+          <input type="email" id="h_email" placeholder="Enter your email address" />
         </div>
         <div class="form-row">
-          <input type="text" name="frustration" placeholder="Biggest frustration buying clothes online? (optional)" />
+          <input type="text" id="h_frustration" placeholder="Biggest frustration buying clothes online? (optional)" />
         </div>
-      </form>
+        <div class="form-row" style="margin-top:4px;">
+          <button onclick="submitHero()" style="width:100%;padding:18px;font-size:14px;letter-spacing:0.1em;">Join Waitlist — Get Early Access →</button>
+        </div>
+      </div>
       <div class="form-note">🔒 No spam. Early access + founding member perks.</div>
       <div class="success-msg" id="heroSuccess">
         ✓ You're on the list! We'll reach out when WEARVO launches.
@@ -1018,15 +1018,10 @@
     <h2>Stop guessing.<br>Start <span style="color:var(--accent)">wearing right.</span></h2>
     <p>Join the waitlist. Be first when WEARVO launches.</p>
 
-    <div class="cta-form">
-      <form name="wearvo-waitlist" method="POST" data-netlify="true" action="/thankyou"
-        style="display:flex; gap:0; width:100%;">
-        <input type="hidden" name="form-name" value="wearvo-waitlist" />
-        <p style="display:none"><input name="bot-field" /></p>
-        <input type="email" name="email" placeholder="your@email.com" required
-          style="flex:1; background:var(--gray); border:1px solid var(--gray2); border-radius:4px 0 0 4px; outline:none; padding:18px 20px; font-family:'DM Sans',sans-serif; font-size:15px; color:var(--white);" />
-        <button type="submit" class="btn-primary" style="border-radius:0 4px 4px 0;">Get Early Access</button>
-      </form>
+    <div class="cta-form" id="ctaForm" style="display:flex;gap:0;max-width:480px;margin:0 auto 20px;">
+        <input type="email" id="c_email" placeholder="your@email.com"
+          style="flex:1;background:var(--gray);border:1px solid var(--gray2);border-radius:4px 0 0 4px;outline:none;padding:18px 20px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--white);" />
+        <button class="btn-primary" onclick="submitCTA()" style="border-radius:0 4px 4px 0;">Get Early Access</button>
     </div>
     <div class="success-msg" id="ctaSuccess" style="max-width:480px;margin:0 auto;">
       ✓ You're in! We'll notify you the moment we launch.
@@ -1067,23 +1062,30 @@
       el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
     });
 
-    // NETLIFY FORM SUBMIT
-    function handleSubmit(e, successId) {
-      e.preventDefault();
-      const form = e.target;
-      fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(new FormData(form)).toString()
-      })
-        .then(() => {
-          form.style.display = 'none';
-          document.getElementById(successId).classList.add('show');
-        })
-        .catch(() => {
-          form.style.display = 'none';
-          document.getElementById(successId).classList.add('show');
-        });
+    // GOOGLE FORMS SUBMIT
+    function submitToGoogle(name, email, frustration) {
+      var url = 'https://docs.google.com/forms/d/e/1FAIpQLScHDxo7wxhQ0bf9nXM10N38T2RHgyI2e2sUWkzZ55nv1Ved1A/formResponse';
+      var body = new FormData();
+      body.append('entry.1317352493', name);
+      body.append('entry.1397964913', email);
+      body.append('entry.822073476', frustration);
+      fetch(url, {method:'POST', mode:'no-cors', body:body});
+    }
+    function submitHero(){
+      var name = document.getElementById('h_name').value.trim();
+      var email = document.getElementById('h_email').value.trim();
+      var frustration = document.getElementById('h_frustration').value.trim();
+      if(!email){ alert('Please enter your email.'); return; }
+      submitToGoogle(name, email, frustration);
+      document.getElementById('heroForm').style.display = 'none';
+      document.getElementById('heroSuccess').classList.add('show');
+    }
+    function submitCTA(){
+      var email = document.getElementById('c_email').value.trim();
+      if(!email){ alert('Please enter your email.'); return; }
+      submitToGoogle('', email, '');
+      document.getElementById('ctaForm').style.display = 'none';
+      document.getElementById('ctaSuccess').classList.add('show');
     }
 
     // SCROLL REVEAL
